@@ -118,8 +118,7 @@ class Node:
                 self.nsd = {}
                 for key in node.attrs.keys():
                     self.attrs[key] = node.attrs[key]
-                for data in node.data:
-                    self.data.append(data)
+                self.data.extend(iter(node.data))
                 for kid in node.kids:
                     self.kids.append(kid)
                 for key, value in node.nsd.items():
@@ -186,10 +185,10 @@ class Node:
         if self.namespace:
             if not self.parent or self.parent.namespace!=self.namespace:
                 if 'xmlns' not in self.attrs:
-                    s += ' xmlns="%s"' % self.namespace
+                    s += f' xmlns="{self.namespace}"'
         for key in self.attrs.keys():
             val = str(self.attrs[key])
-            s += ' %s="%s"' % (key, XMLescape(val))
+            s += f' {key}="{XMLescape(val)}"'
 
         s += ">"
         cnt = 0
@@ -201,25 +200,20 @@ class Node:
                     s += XMLescape(self.data[cnt])
                 elif (len(self.data)-1) >= cnt:
                     s += XMLescape(self.data[cnt].strip())
-                if isinstance(a, str):
-                    s += a.__str__()
-                else:
-                    s += a.__str__(fancy and fancy+1)
+                s += a.__str__() if isinstance(a, str) else a.__str__(fancy and fancy+1)
                 cnt += 1
         if not fancy and (len(self.data)-1) >= cnt:
             s += XMLescape(self.data[cnt])
         elif (len(self.data)-1) >= cnt:
             s += XMLescape(self.data[cnt].strip())
         if not self.kids and s.endswith('>'):
-            s = s[:-1] + ' />'
-            if fancy:
-                s += "\n"
+            s = f'{s[:-1]} />'
         else:
             if fancy and not self.data:
                 s += (fancy-1) * 2 * ' '
-            s += "</" + self.name + ">"
-            if fancy:
-                s += "\n"
+            s += f"</{self.name}>"
+        if fancy:
+            s += "\n"
         return s
 
     def addChild(self,
@@ -284,9 +278,7 @@ class Node:
         """
         Return all node's attributes as dictionary
         """
-        if copy:
-            return deepcopy(self.attrs)
-        return self.attrs
+        return deepcopy(self.attrs) if copy else self.attrs
 
     def getAttr(self, key: str) -> Optional[str]:
         """
@@ -364,18 +356,14 @@ class Node:
         such attribute)
         """
         node = self.getTag(tag, namespace=namespace)
-        if node is None:
-            return None
-        return node.getAttr(attr)
+        return None if node is None else node.getAttr(attr)
 
     def getTagData(self, tag: str) -> Optional[str]:
         """
         Return cocatenated CDATA of the child with specified name
         """
         node = self.getTag(tag)
-        if node is None:
-            return None
-        return node.getData()
+        return None if node is None else node.getData()
 
     def getTags(self,
                 name: str,
@@ -400,9 +388,7 @@ class Node:
                     nodes.append(node)
             if one and nodes:
                 return nodes[0]
-        if not one:
-            return nodes
-        return None
+        return nodes if not one else None
 
     def iterTags(self,
                  name: str,
@@ -479,8 +465,7 @@ class Node:
         Same as getTag but if the node with specified namespace/attributes not
         found, creates such node and returns it
         """
-        node = self.getTags(name, attrs, namespace=namespace, one=True)
-        if node:
+        if node := self.getTags(name, attrs, namespace=namespace, one=True):
             return node
         return self.addChild(name, attrs, namespace=namespace)
 
@@ -507,18 +492,16 @@ class Node:
         (optionally) attributes "attrs" and sets it's CDATA to string "val"
         """
         try:
-            self.getTag(tag, attrs).setData(str(val))
+            self.getTag(tag, attrs).setData(val)
         except Exception:
-            self.addChild(tag, attrs, payload = [str(val)])
+            self.addChild(tag, attrs, payload=[val])
 
     def getXmlLang(self) -> Optional[str]:
         lang = self.attrs.get('xml:lang')
         if lang is not None:
             return lang
 
-        if self.parent is not None:
-            return self.parent.getXmlLang()
-        return None
+        return self.parent.getXmlLang() if self.parent is not None else None
 
     def has_attr(self, key: str) -> bool:
         """
@@ -743,8 +726,7 @@ class NodeBuilder:
     def _check_stream_start(self, ns: str, tag: str) -> None:
         if self._is_stream:
             if ns != 'http://etherx.jabber.org/streams' or tag != 'stream':
-                raise ValueError('Incorrect stream start: (%s,%s). Terminating.'
-                                 % (tag, ns))
+                raise ValueError(f'Incorrect stream start: ({tag},{ns}). Terminating.')
         else:
             self.stream_header_received()
 
@@ -756,8 +738,7 @@ class NodeBuilder:
         self.check_data_buffer()
         if self.__depth == self._dispatch_depth:
             if self._mini_dom.getName() == 'error':
-                children = self._mini_dom.getChildren()
-                if children:
+                if children := self._mini_dom.getChildren():
                     self.streamError = children[0].getName()
                 else:
                     self.streamError = self._mini_dom.getData()
@@ -781,7 +762,7 @@ class NodeBuilder:
 
     @staticmethod
     def handle_invalid_xmpp_element(*args: Any) -> None:
-        raise ExpatError('Found invalid xmpp stream element: %s' % str(args))
+        raise ExpatError(f'Found invalid xmpp stream element: {args}')
 
     def handle_namespace_start(self, _prefix: str, _uri: str) -> None:
         """

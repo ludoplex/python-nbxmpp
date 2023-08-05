@@ -15,9 +15,9 @@ class SCRAM(unittest.TestCase):
         self._username = 'user'
         self._password = 'pencil'
 
-        self.auth = '<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="SCRAM-SHA-1">%s</auth>' % b64encode('n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL')
+        self.auth = f"""<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="SCRAM-SHA-1">{b64encode('n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL')}</auth>"""
         self.challenge = b64encode('r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096')
-        self.response = '<response xmlns="urn:ietf:params:xml:ns:xmpp-sasl">%s</response>' % b64encode('c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=')
+        self.response = f"""<response xmlns="urn:ietf:params:xml:ns:xmpp-sasl">{b64encode('c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=')}</response>"""
         self.success = b64encode('v=rmF9pqV8S7suAoZWja4dJRkFsKQ=')
 
     def test_auth(self):

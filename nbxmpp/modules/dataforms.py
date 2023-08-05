@@ -55,7 +55,7 @@ class ExtendedNode(Node):
 # helper to create fields from scratch
 def create_field(typ, **attrs):
     ''' Helper function to create a field of given type. '''
-    field = {
+    return {
         'boolean': BooleanField,
         'fixed': StringField,
         'hidden': StringField,
@@ -67,7 +67,6 @@ def create_field(typ, **attrs):
         'list-single': ListSingleField,
         'text-multi': TextMultiField,
     }[typ](typ=typ, **attrs)
-    return field
 
 
 def extend_field(node):
@@ -137,9 +136,7 @@ class DataField(ExtendedNode):
         DataField will store given name, but treat all data as text-single
         """
         type_ = self.getAttr('type')
-        if type_ is None:
-            return 'text-single'
-        return type_
+        return 'text-single' if type_ is None else type_
 
     @type_.setter
     def type_(self, value):
@@ -223,8 +220,7 @@ class DataField(ExtendedNode):
         """
         Media data
         """
-        media = self.getTag('media', namespace=Namespace.DATA_MEDIA)
-        if media:
+        if media := self.getTag('media', namespace=Namespace.DATA_MEDIA):
             return Media(media)
         return None
 
@@ -356,9 +352,7 @@ class StringField(DataField):
     def is_valid(self):
         if not self.required:
             return True, ''
-        if not self.value:
-            return False, ''
-        return True, ''
+        return (False, '') if not self.value else (True, '')
 
 
 class ListField(DataField):
@@ -412,9 +406,7 @@ class ListSingleField(ListField, StringField):
     def is_valid(self):
         if not self.required:
             return True, ''
-        if not self.value:
-            return False, ''
-        return True, ''
+        return (False, '') if not self.value else (True, '')
 
 
 class JidSingleField(ListSingleField):
@@ -428,9 +420,7 @@ class JidSingleField(ListSingleField):
                 return True, ''
             except Exception as error:
                 return False, error
-        if self.required:
-            return False, ''
-        return True, ''
+        return (False, '') if self.required else (True, '')
 
 
 class ListMultiField(ListField):
@@ -443,10 +433,7 @@ class ListMultiField(ListField):
         """
         Values held in field
         """
-        values = []
-        for element in self.getTags('value'):
-            values.append(element.getData())
-        return values
+        return [element.getData() for element in self.getTags('value')]
 
     @values.setter
     def values(self, values):
@@ -466,9 +453,7 @@ class ListMultiField(ListField):
     def is_valid(self):
         if not self.required:
             return True, ''
-        if not self.values:
-            return False, ''
-        return True, ''
+        return (False, '') if not self.values else (True, '')
 
 
 class JidMultiField(ListMultiField):
@@ -483,9 +468,7 @@ class JidMultiField(ListMultiField):
                 except Exception as error:
                     return False, error
             return True, ''
-        if self.required:
-            return False, ''
-        return True, ''
+        return (False, '') if self.required else (True, '')
 
 
 class TextMultiField(DataField):
@@ -494,9 +477,7 @@ class TextMultiField(DataField):
         """
         Value held in field
         """
-        value = ''
-        for element in self.iterTags('value'):
-            value += '\n' + element.getData()
+        value = ''.join('\n' + element.getData() for element in self.iterTags('value'))
         return value[1:]
 
     @value.setter
@@ -515,9 +496,7 @@ class TextMultiField(DataField):
     def is_valid(self):
         if not self.required:
             return True, ''
-        if not self.value:
-            return False, ''
-        return True, ''
+        return (False, '') if not self.value else (True, '')
 
 
 class DataRecord(ExtendedNode):
@@ -534,16 +513,13 @@ class DataRecord(ExtendedNode):
 
             if fields is not None:
                 self.fields = fields
+        elif fields is None:
+            for field in self.iterTags('field'):
+                if not isinstance(field, DataField):
+                    extend_field(field)
+                self.vars[field.var] = field
         else:
-            # we already have nbxmpp.Node inside - try to convert all
-            # fields into DataField objects
-            if fields is None:
-                for field in self.iterTags('field'):
-                    if not isinstance(field, DataField):
-                        extend_field(field)
-                    self.vars[field.var] = field
-            else:
-                self.fields = fields
+            self.fields = fields
 
     @property
     def fields(self):
@@ -571,8 +547,7 @@ class DataRecord(ExtendedNode):
         """
         Iterate over fields in this record. Do not take associated into account
         """
-        for field in self.iterTags('field'):
-            yield field
+        yield from self.iterTags('field')
 
     def iter_with_associated(self):
         """
@@ -586,10 +561,7 @@ class DataRecord(ExtendedNode):
         return self.vars[item]
 
     def is_valid(self):
-        for field in self.iter_fields():
-            if not field.is_valid()[0]:
-                return False
-        return True
+        return all(field.is_valid()[0] for field in self.iter_fields())
 
     def is_fake_form(self):
         return bool(self.vars.get('fakeform', False))
@@ -649,10 +621,10 @@ class DataForm(ExtendedNode):
 
         Human-readable, may contain \\r\\n.
         """
-        # TODO: the same code is in TextMultiField. join them
-        value = ''
-        for valuenode in self.getTags('instructions'):
-            value += '\n' + valuenode.getData()
+        value = ''.join(
+            '\n' + valuenode.getData()
+            for valuenode in self.getTags('instructions')
+        )
         return value[1:]
 
     @instructions.setter
@@ -715,15 +687,12 @@ class MultipleDataForm(DataForm):
         if extend is None:
             if items is not None:
                 self.items = items
+        elif items is None:
+            self.items = list(self.iterTags('item'))
         else:
-            # we already have nbxmpp.Node inside - try to convert all
-            # fields into DataField objects
-            if items is None:
-                self.items = list(self.iterTags('item'))
-            else:
-                for item in self.getTags('item'):
-                    self.delChild(item)
-                self.items = items
+            for item in self.getTags('item'):
+                self.delChild(item)
+            self.items = items
         reported_tag = self.getTag('reported')
         self.reported = DataRecord(extend=reported_tag)
 
@@ -748,5 +717,4 @@ class MultipleDataForm(DataForm):
             self.delChild(record)
 
     def iter_records(self):
-        for record in self.getTags('item'):
-            yield record
+        yield from self.getTags('item')

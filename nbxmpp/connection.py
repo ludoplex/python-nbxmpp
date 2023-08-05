@@ -113,9 +113,7 @@ class Connection(Observable):
                         Gio.TlsCertificateFlags.UNKNOWN_CA)
                     break
 
-        if not self._peer_certificate_errors:
-            return True
-        return False
+        return not self._peer_certificate_errors
 
     def disconnect(self):
         raise NotImplementedError

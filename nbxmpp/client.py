@@ -70,7 +70,7 @@ class Client(Observable):
 
         self._log_context = log_context
         if log_context is None:
-            self._log_context = str(id(self))
+            self._log_context = id(self)
 
         self._log = LogAdapter(log, {'context': self._log_context})
 
@@ -278,9 +278,7 @@ class Client(Observable):
 
     @property
     def mechs(self):
-        return set(self._allowed_mechs or set(['SCRAM-SHA-256',
-                                               'SCRAM-SHA-1',
-                                               'PLAIN']))
+        return set(self._allowed_mechs or {'SCRAM-SHA-256', 'SCRAM-SHA-1', 'PLAIN'})
 
     def set_mechs(self, mechs):
         self._allowed_mechs = mechs
@@ -406,9 +404,11 @@ class Client(Observable):
             self._current_address = None
             self.state = StreamState.DISCONNECTED
             self._log.error('Unable to connect to %s', self._addresses.domain)
-            self._set_error(StreamError.CONNECTION_FAILED,
-                            'connection-failed',
-                            'Unable to connect to %s' % self._addresses.domain)
+            self._set_error(
+                StreamError.CONNECTION_FAILED,
+                'connection-failed',
+                f'Unable to connect to {self._addresses.domain}',
+            )
             self.notify('connection-failed')
             return
 
@@ -470,10 +470,11 @@ class Client(Observable):
         if not self._connect_successful:
             self._try_next_ip()
         else:
-            self._set_error(StreamError.CONNECTION_FAILED,
-                            'connection-failed',
-                            (f'Unable to connect to last '
-                             'successful address: {self._current_address}'))
+            self._set_error(
+                StreamError.CONNECTION_FAILED,
+                'connection-failed',
+                'Unable to connect to last successful address: {self._current_address}',
+            )
             self.notify('connection-failed')
 
     def _disconnect_with_error(self, error_domain, error, text=None):
@@ -508,10 +509,7 @@ class Client(Observable):
         self._con = None
 
     def _end_stream(self):
-        if self.is_websocket:
-            nonza = WebsocketCloseHeader()
-        else:
-            nonza = '</stream:stream>'
+        nonza = WebsocketCloseHeader() if self.is_websocket else '</stream:stream>'
         self.send_nonza(nonza)
 
     def get_module(self, name):

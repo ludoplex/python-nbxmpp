@@ -60,9 +60,9 @@ class Location(BaseModule):
                            properties.jid)
             return
 
-        location_dict = {}
-        for node in LOCATION_DATA:
-            location_dict[node] = location_node.getTagData(node)
+        location_dict = {
+            node: location_node.getTagData(node) for node in LOCATION_DATA
+        }
         data = LocationData(**location_dict)
         pubsub_event = properties.pubsub_event._replace(data=data)
         self._log.info('Received location: %s - %s', properties.jid, data)

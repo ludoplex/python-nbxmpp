@@ -37,11 +37,11 @@ class ChatMarkers(BaseModule):
         type_ = stanza.getTag('received', namespace=Namespace.CHATMARKERS)
         if type_ is None:
             type_ = stanza.getTag('displayed', namespace=Namespace.CHATMARKERS)
-            if type_ is None:
-                type_ = stanza.getTag('acknowledged',
-                                      namespace=Namespace.CHATMARKERS)
-                if type_ is None:
-                    return
+        if type_ is None:
+            type_ = stanza.getTag('acknowledged',
+                                  namespace=Namespace.CHATMARKERS)
+        if type_ is None:
+            return
 
         name = type_.getName()
         id_ = type_.getAttr('id')

@@ -75,8 +75,7 @@ class BaseMessage(BaseModule):
         properties.body = stanza.getBody()
         properties.thread = stanza.getThread()
         properties.subject = stanza.getSubject()
-        forms = stanza.getTags('x', namespace=Namespace.DATA)
-        if forms:
+        if forms := stanza.getTags('x', namespace=Namespace.DATA):
             properties.forms = forms
 
         xhtml = stanza.getXHTML()

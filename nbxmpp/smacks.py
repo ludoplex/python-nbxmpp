@@ -107,7 +107,7 @@ class Smacks:
         if self._client.sm_disabled:
             return
 
-        enable = Node(Namespace.STREAM_MGMT + ' enable', attrs={'resume': 'true'})
+        enable = Node(f'{Namespace.STREAM_MGMT} enable', attrs={'resume': 'true'})
         self._client.send_nonza(enable, now=False)
         self._log.debug('Send enable')
         self._enable_sent = True
@@ -203,8 +203,10 @@ class Smacks:
         self._old_uqueue += self._uqueue
         self._uqueue = []
 
-        resume = Node(Namespace.STREAM_MGMT + ' resume',
-                      attrs={'h': self._in_h, 'previd': self._session_id})
+        resume = Node(
+            f'{Namespace.STREAM_MGMT} resume',
+            attrs={'h': self._in_h, 'previd': self._session_id},
+        )
 
         self._acked_h = self._in_h
         self.resume_in_progress = True
@@ -228,7 +230,7 @@ class Smacks:
         self._resend_queue()
 
     def _send_ack(self, *args):
-        ack = Node(Namespace.STREAM_MGMT + ' a', attrs={'h': self._in_h})
+        ack = Node(f'{Namespace.STREAM_MGMT} a', attrs={'h': self._in_h})
         self._acked_h = self._in_h
         self._log.debug('Send ack, h: %s', self._in_h)
         self._client.send_nonza(ack, now=False)
@@ -240,7 +242,7 @@ class Smacks:
         self._reset_state()
 
     def _request_ack(self):
-        request = Node(Namespace.STREAM_MGMT + ' r')
+        request = Node(f'{Namespace.STREAM_MGMT} r')
         self._log.debug('Request ack')
         self._client.send_nonza(request, now=False)
 

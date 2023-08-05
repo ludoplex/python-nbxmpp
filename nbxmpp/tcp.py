@@ -109,12 +109,14 @@ class TCPConnection(Connection):
 
     def _on_connect_finished(self, client, result, _user_data):
         try:
-            if self._address.proxy is not None:
+            if (
+                self._address.proxy is not None
+                or not self._address.is_service
+                and self._address.is_host
+            ):
                 self._con = client.connect_to_host_finish(result)
             elif self._address.is_service:
                 self._con = client.connect_to_service_finish(result)
-            elif self._address.is_host:
-                self._con = client.connect_to_host_finish(result)
             else:
                 raise ValueError('Address must be a service or host')
         except GLib.Error as error:

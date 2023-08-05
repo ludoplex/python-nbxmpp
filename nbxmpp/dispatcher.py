@@ -483,11 +483,11 @@ class StanzaDispatcher(Observable):
 
     def _timeout_check(self):
         self._log.info('Run timeout check')
-        timeouts = {}
-        for id_, data in self._id_callbacks.items():
-            if data[1] is not None:
-                timeouts[id_] = data
-
+        timeouts = {
+            id_: data
+            for id_, data in self._id_callbacks.items()
+            if data[1] is not None
+        }
         if not timeouts:
             self._log.info('Remove timeout check, no timeouts scheduled')
             self._timeout_id = None

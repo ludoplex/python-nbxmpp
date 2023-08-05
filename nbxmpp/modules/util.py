@@ -42,9 +42,7 @@ def raise_if_error(result):
 def finalize(task, result):
     if is_error(result):
         raise result
-    if isinstance(result, Node):
-        return task.set_result(result)
-    return result
+    return task.set_result(result) if isinstance(result, Node) else result
 
 
 def parse_xmpp_uri(uri):
@@ -52,7 +50,7 @@ def parse_xmpp_uri(uri):
     if url.scheme != 'xmpp':
         raise ValueError('not a xmpp uri')
 
-    if not ';' in url.query:
+    if ';' not in url.query:
         return (url.path, url.query, {})
 
     action, query = url.query.split(';', 1)
@@ -70,11 +68,11 @@ def make_func_arguments_string(func, self, args, kwargs):
     signature = inspect.signature(func)
     bound_arguments = signature.bind(self, *args, **kwargs)
     bound_arguments.apply_defaults()
-    arg_string = ''
-    for name, arg in bound_arguments.arguments.items():
-        if name == 'self':
-            continue
-        arg_string += f'{name}={arg}, '
+    arg_string = ''.join(
+        f'{name}={arg}, '
+        for name, arg in bound_arguments.arguments.items()
+        if name != 'self'
+    )
     arg_string = arg_string[:-2]
     return f'{func.__name__}({arg_string})'
 

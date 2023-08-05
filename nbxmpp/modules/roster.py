@@ -73,7 +73,7 @@ class Roster(BaseModule):
     def _process_roster_push(self, _client, stanza, properties):
         from_ = stanza.getFrom()
         if from_ is not None:
-            if not self._client.get_bound_jid().bare == from_:
+            if self._client.get_bound_jid().bare != from_:
                 self._log.warning('Malicious Roster Push from %s', from_)
                 raise NodeProcessed
 

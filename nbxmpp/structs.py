@@ -222,9 +222,7 @@ class DiscoInfo(namedtuple('DiscoInfo', 'stanza identities features dataforms ti
         except Exception:
             return None
 
-        if query is not None:
-            return query.getAttr('node')
-        return None
+        return query.getAttr('node') if query is not None else None
 
     @property
     def jid(self):
@@ -237,9 +235,7 @@ class DiscoInfo(namedtuple('DiscoInfo', 'stanza identities features dataforms ti
     def mam_namespace(self):
         if Namespace.MAM_2 in self.features:
             return Namespace.MAM_2
-        if Namespace.MAM_1 in self.features:
-            return Namespace.MAM_1
-        return None
+        return Namespace.MAM_1 if Namespace.MAM_1 in self.features else None
 
     @property
     def has_mam_2(self):
@@ -273,16 +269,18 @@ class DiscoInfo(namedtuple('DiscoInfo', 'stanza identities features dataforms ti
         if self.muc_identity_name:
             return self.muc_identity_name
 
-        if self.jid is not None:
-            return self.jid.localpart
-        return None
+        return self.jid.localpart if self.jid is not None else None
 
     @property
     def muc_identity_name(self):
-        for identity in self.identities:
-            if identity.category == 'conference':
-                return identity.name
-        return None
+        return next(
+            (
+                identity.name
+                for identity in self.identities
+                if identity.category == 'conference'
+            ),
+            None,
+        )
 
     @property
     def muc_room_name(self):
@@ -369,30 +367,32 @@ class DiscoInfo(namedtuple('DiscoInfo', 'stanza identities features dataforms ti
 
     @property
     def is_gateway(self):
-        for identity in self.identities:
-            if identity.category == 'gateway':
-                return True
-        return False
+        return any(identity.category == 'gateway' for identity in self.identities)
 
     @property
     def gateway_name(self):
-        for identity in self.identities:
-            if identity.category == 'gateway':
-                return identity.name
-        return None
+        return next(
+            (
+                identity.name
+                for identity in self.identities
+                if identity.category == 'gateway'
+            ),
+            None,
+        )
 
     @property
     def gateway_type(self):
-        for identity in self.identities:
-            if identity.category == 'gateway':
-                return identity.type
-        return None
+        return next(
+            (
+                identity.type
+                for identity in self.identities
+                if identity.category == 'gateway'
+            ),
+            None,
+        )
 
     def has_category(self, category):
-        for identity in self.identities:
-            if identity.category == category:
-                return True
-        return False
+        return any(identity.category == category for identity in self.identities)
 
     @property
     def httpupload_max_file_size(self):
@@ -428,10 +428,7 @@ class DiscoIdentity(namedtuple('DiscoIdentity', 'category type name lang')):
         return not self.__eq__(other)
 
     def __str__(self):
-        return '%s/%s/%s/%s' % (self.category,
-                                self.type,
-                                self.lang or '',
-                                self.name or '')
+        return f"{self.category}/{self.type}/{self.lang or ''}/{self.name or ''}"
 
     def __hash__(self):
         return hash(str(self))
@@ -461,12 +458,9 @@ class ProxyData(namedtuple('ProxyData', 'type host username password')):
 
     def get_uri(self):
         if self.username is not None:
-            user_pass = Soup.uri_encode('%s:%s' % (self.username,
-                                                   self.password))
-            return '%s://%s@%s' % (self.type,
-                                   user_pass,
-                                   self.host)
-        return '%s://%s' % (self.type, self.host)
+            user_pass = Soup.uri_encode(f'{self.username}:{self.password}')
+            return f'{self.type}://{user_pass}@{self.host}'
+        return f'{self.type}://{self.host}'
 
     def get_resolver(self):
         return Gio.SimpleProxyResolver.new(self.get_uri(), None)
@@ -526,9 +520,7 @@ class CommonError:
                 return text
 
             text = self._text.get(None)
-            if text is not None:
-                return text
-            return self._text.popitem()[1]
+            return text if text is not None else self._text.popitem()[1]
         return ''
 
     def set_text(self, lang, text):
@@ -537,11 +529,11 @@ class CommonError:
     def __str__(self):
         condition = self.condition
         if self.app_condition is not None:
-            condition = '%s (%s)' % (self.condition, self.app_condition)
+            condition = f'{self.condition} ({self.app_condition})'
         text = self.get_text('en') or ''
         if text:
-            text = ' - %s' % text
-        return 'Error from %s: %s%s' % (self.jid, condition, text)
+            text = f' - {text}'
+        return f'Error from {self.jid}: {condition}{text}'
 
     def serialize(self):
         return str(Protocol(name=self._stanza_name,
@@ -556,7 +548,7 @@ class HTTPUploadError(CommonError):
         CommonError.__init__(self, stanza)
 
     def get_max_file_size(self):
-        if not self.app_condition == 'file-too-large':
+        if self.app_condition != 'file-too-large':
             return None
         node = self._error_node.getTag(self.app_condition)
         try:
@@ -565,7 +557,7 @@ class HTTPUploadError(CommonError):
             return None
 
     def get_retry_date(self):
-        if not self.app_condition == 'retry':
+        if self.app_condition != 'retry':
             return None
         return self._error_node.getTagAttr('stamp')
 
@@ -590,8 +582,8 @@ class StanzaMalformedError(CommonError):
     def __str__(self):
         text = self.get_text('en')
         if text:
-            text = ': %s' % text
-        return 'Received malformed stanza from %s%s' % (self.jid, text)
+            text = f': {text}'
+        return f'Received malformed stanza from {self.jid}{text}'
 
     def serialize(self):
         raise NotImplementedError
@@ -620,8 +612,8 @@ class StreamError(CommonError):
     def __str__(self):
         text = self.get_text('en') or ''
         if text:
-            text = ' - %s' % text
-        return 'Error from %s: %s%s' % (self.jid, self.condition, text)
+            text = f' - {text}'
+        return f'Error from {self.jid}: {self.condition}{text}'
 
     def serialize(self):
         raise NotImplementedError
@@ -1026,6 +1018,4 @@ class XHTMLData:
             return str(body)
 
         body = self._bodys.get(None)
-        if body is not None:
-            return str(body)
-        return str(self._bodys.popitem()[1])
+        return str(body) if body is not None else str(self._bodys.popitem()[1])

@@ -91,21 +91,24 @@ class ServerAddresses(Observable):
         ]
 
         self._fallback_addresses = [
-            ServerAddress(domain=self._domain,
-                          service=None,
-                          host='%s:%s' % (self._domain, 5222),
-                          uri=None,
-                          protocol=ConnectionProtocol.TCP,
-                          type=ConnectionType.START_TLS,
-                          proxy=None),
-
-            ServerAddress(domain=self._domain,
-                          service=None,
-                          host='%s:%s' % (self._domain, 5222),
-                          uri=None,
-                          protocol=ConnectionProtocol.TCP,
-                          type=ConnectionType.PLAIN,
-                          proxy=None)
+            ServerAddress(
+                domain=self._domain,
+                service=None,
+                host=f'{self._domain}:5222',
+                uri=None,
+                protocol=ConnectionProtocol.TCP,
+                type=ConnectionType.START_TLS,
+                proxy=None,
+            ),
+            ServerAddress(
+                domain=self._domain,
+                service=None,
+                host=f'{self._domain}:5222',
+                uri=None,
+                protocol=ConnectionProtocol.TCP,
+                type=ConnectionType.PLAIN,
+                proxy=None,
+            ),
         ]
 
     @property

@@ -262,8 +262,7 @@ class MUC(BaseModule):
             # read implementation notes
             return
 
-        data = {}
-        data['muc'] = JID.from_string(direct.getAttr('jid'))
+        data = {'muc': JID.from_string(direct.getAttr('jid'))}
         data['from_'] = properties.jid
         data['reason'] = direct.getAttr('reason')
         data['password'] = direct.getAttr('password')
@@ -369,8 +368,7 @@ class MUC(BaseModule):
                 users_dict[jid]['nick'] = item.getAttr('nick')
             if item.has_attr('role'):
                 users_dict[jid]['role'] = item.getAttr('role')
-            reason = item.getTagData('reason')
-            if reason:
+            if reason := item.getTagData('reason'):
                 users_dict[jid]['reason'] = reason
 
         self._log.info('Affiliations received from %s: %s',

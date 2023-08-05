@@ -98,8 +98,7 @@ class AdHoc(BaseModule):
             raise MalformedStanzaError('status attribute missing', response)
 
         if status not in ('executing', 'completed', 'canceled'):
-            raise MalformedStanzaError('invalid status attribute %s' % status,
-                                       response)
+            raise MalformedStanzaError(f'invalid status attribute {status}', response)
 
         status = AdHocStatus(status)
 
@@ -142,7 +141,7 @@ def _parse_notes(command):
             type_ = 'info'
 
         if type_ not in ('info', 'warn', 'error'):
-            raise ValueError('invalid note type %s' % type_)
+            raise ValueError(f'invalid note type {type_}')
 
         notes.append(AdHocCommandNote(text=note.getData(),
                                       type=AdHocNoteType(type_)))
@@ -164,7 +163,7 @@ def _parse_actions(command):
     for action in actions_node.getChildren():
         name = action.getName()
         if name not in ('prev', 'next', 'complete'):
-            raise ValueError('invalid action name: %s' % name)
+            raise ValueError(f'invalid action name: {name}')
         actions.append(AdHocAction(name))
 
     if not actions:
@@ -179,7 +178,7 @@ def _parse_actions(command):
         default = 'next'
 
     if default not in ('prev', 'next', 'complete'):
-        raise ValueError('invalid execute attribute %s' % default)
+        raise ValueError(f'invalid execute attribute {default}')
 
     default = AdHocAction(default)
 

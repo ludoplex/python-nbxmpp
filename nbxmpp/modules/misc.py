@@ -34,12 +34,12 @@ def unwrap_carbon(stanza, own_jid):
     carbon = stanza.getTag('received', namespace=Namespace.CARBONS)
     if carbon is None:
         carbon = stanza.getTag('sent', namespace=Namespace.CARBONS)
-        if carbon is None:
-            return stanza, None
+    if carbon is None:
+        return stanza, None
 
     # Carbon must be from our bare jid
     if stanza.getFrom() != own_jid.new_as_bare():
-        raise InvalidFrom('Invalid from: %s' % stanza.getAttr('from'))
+        raise InvalidFrom(f"Invalid from: {stanza.getAttr('from')}")
 
     forwarded = carbon.getTag('forwarded', namespace=Namespace.FORWARD)
     message = Message(node=forwarded.getTag('message'))
@@ -74,8 +74,8 @@ def unwrap_mam(stanza, own_jid):
     result = stanza.getTag('result', namespace=Namespace.MAM_2)
     if result is None:
         result = stanza.getTag('result', namespace=Namespace.MAM_1)
-        if result is None:
-            return stanza, None
+    if result is None:
+        return stanza, None
 
     query_id = result.getAttr('queryid')
     if query_id is None:
@@ -119,10 +119,9 @@ def unwrap_mam(stanza, own_jid):
 def build_xhtml_body(xhtml, xmllang=None):
     try:
         if xmllang is not None:
-            body = '<body xmlns="%s" xml:lang="%s">%s</body>' % (
-                Namespace.XHTML, xmllang, xhtml)
+            body = f'<body xmlns="{Namespace.XHTML}" xml:lang="{xmllang}">{xhtml}</body>'
         else:
-            body = '<body xmlns="%s">%s</body>' % (Namespace.XHTML, xhtml)
+            body = f'<body xmlns="{Namespace.XHTML}">{xhtml}</body>'
     except Exception as error:
         log.error('Error while building xhtml node: %s', error)
         return None

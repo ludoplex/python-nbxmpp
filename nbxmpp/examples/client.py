@@ -56,7 +56,7 @@ class StanzaRow(Gtk.ListBoxRow):
             stanza = stanza.__str__(fancy=True)
         stanza = GLib.markup_escape_text(stanza)
         label = Gtk.Label()
-        label.set_markup('<span foreground="%s">%s</span>' % (color, stanza))
+        label.set_markup(f'<span foreground="{color}">{stanza}</span>')
         label.set_xalign(0)
         label.set_halign(Gtk.Align.START)
         self.add(label)
@@ -84,10 +84,9 @@ class TestClient(Gtk.Window):
         self._client.set_username(self.address.localpart)
         self._client.set_resource('test')
 
-        proxy_ip = self._builder.proxy_ip.get_text()
-        if proxy_ip:
+        if proxy_ip := self._builder.proxy_ip.get_text():
             proxy_port = int(self._builder.proxy_port.get_text())
-            proxy_host = '%s:%s' % (proxy_ip, proxy_port)
+            proxy_host = f'{proxy_ip}:{proxy_port}'
             proxy = ProxyData(self._builder.proxy_type.get_active_text().lower(),
                               proxy_host,
                               self._builder.proxy_username.get_text() or None,
@@ -203,8 +202,7 @@ class TestClient(Gtk.Window):
         return protocols
 
     def _on_save_clicked(self, *args):
-        data = {}
-        data['jid'] = self._builder.address.get_text()
+        data = {'jid': self._builder.address.get_text()}
         data['password'] = self._builder.password.get_text()
         data['proxy_type'] = self._builder.proxy_type.get_active_text()
         data['proxy_ip'] = self._builder.proxy_ip.get_text()
@@ -263,9 +261,9 @@ class TestClient(Gtk.Window):
                 # don't use mkdir(parent=True), as it ignores `mode`
                 # when creating the parents
                 if not parent_path.exists():
-                    print('creating %s directory' % parent_path)
+                    print(f'creating {parent_path} directory')
                     parent_path.mkdir(mode=0o700)
-            print('creating %s directory' % path_)
+            print(f'creating {path_} directory')
             path_.mkdir(mode=0o700)
 
     def _remove(self, item):

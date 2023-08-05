@@ -114,4 +114,4 @@ class EntityCaps(BaseModule):
         self._uri = uri
         self._caps = DiscoInfo(None, identities, features, [])
         self._caps_hash = compute_caps_hash(self._caps, compare=False)
-        self._node = '%s#%s' % (uri, self._caps_hash)
+        self._node = f'{uri}#{self._caps_hash}'
