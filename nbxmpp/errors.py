@@ -65,10 +65,14 @@ class StanzaError(BaseError):
         if self.app_namespace is None:
             return None
 
-        for node in self._error_node.getChildren():
-            if node.getNamespace() == self.app_namespace:
-                return node.getName()
-        return None
+        return next(
+            (
+                node.getName()
+                for node in self._error_node.getChildren()
+                if node.getNamespace() == self.app_namespace
+            ),
+            None,
+        )
 
     def get_text(self, pref_lang=None):
         if pref_lang is not None:
@@ -82,9 +86,7 @@ class StanzaError(BaseError):
                 return text
 
             text = self._text.get(None)
-            if text is not None:
-                return text
-            return self._text.popitem()[1]
+            return text if text is not None else self._text.popitem()[1]
         return ''
 
     def set_text(self, lang, text):
@@ -93,11 +95,11 @@ class StanzaError(BaseError):
     def __str__(self):
         condition = self.condition
         if self.app_condition is not None:
-            condition = '%s (%s)' % (self.condition, self.app_condition)
+            condition = f'{self.condition} ({self.app_condition})'
         text = self.get_text('en') or ''
         if text:
-            text = ' - %s' % text
-        return 'Error from %s: %s%s' % (self.jid, condition, text)
+            text = f' - {text}'
+        return f'Error from {self.jid}: {condition}{text}'
 
 
 class PubSubStanzaError(StanzaError):

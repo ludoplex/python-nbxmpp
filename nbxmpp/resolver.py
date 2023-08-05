@@ -44,9 +44,7 @@ class DNSResolveRequest:
 
     def _lookup_cache(self, cache):
         cached_request = cache.get(self)
-        if cached_request is None:
-            return None
-        return cached_request.result
+        return None if cached_request is None else cached_request.result
 
     def finalize(self):
         GLib.idle_add(self._callback, self.result)
@@ -65,7 +63,7 @@ class AlternativeMethods(DNSResolveRequest):
 
     @property
     def hostname(self):
-        return '_xmppconnect.%s' % self._domain
+        return f'_xmppconnect.{self._domain}'
 
     def __hash__(self):
         return hash(self.hostname)
@@ -73,11 +71,10 @@ class AlternativeMethods(DNSResolveRequest):
 
 class Singleton(type):
     _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args,
-                                                                 **kwargs)
-        return cls._instances[cls]
+    def __call__(self, *args, **kwargs):
+        if self not in self._instances:
+            self._instances[self] = super(Singleton, self).__call__(*args, **kwargs)
+        return self._instances[self]
 
 
 class GioResolver(metaclass=Singleton):
@@ -123,10 +120,14 @@ class GioResolver(metaclass=Singleton):
     @staticmethod
     def _parse_alternative_methods(variant_results):
         result_list = [res[0][0] for res in variant_results]
-        for result in result_list:
-            if result.startswith('_xmpp-client-websocket'):
-                return result.split('=')[1]
-        return None
+        return next(
+            (
+                result.split('=')[1]
+                for result in result_list
+                if result.startswith('_xmpp-client-websocket')
+            ),
+            None,
+        )
 
 
 if __name__ == '__main__':

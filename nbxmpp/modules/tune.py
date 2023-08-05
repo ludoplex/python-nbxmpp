@@ -59,10 +59,7 @@ class Tune(BaseModule):
             self._log.info('Received tune: %s - no tune set', properties.jid)
             return
 
-        tune_dict = {}
-        for attr in TUNE_DATA:
-            tune_dict[attr] = tune_node.getTagData(attr)
-
+        tune_dict = {attr: tune_node.getTagData(attr) for attr in TUNE_DATA}
         data = TuneData(**tune_dict)
         if data.artist is None and data.title is None:
             self._log.warning('Missing artist or title: %s %s',

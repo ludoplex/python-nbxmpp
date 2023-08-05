@@ -662,14 +662,8 @@ class JID:
                    resource=None)
 
     def __str__(self):
-        if self.localpart:
-            jid = f'{self.localpart}@{self.domain}'
-        else:
-            jid = self.domain
-
-        if self.resource is not None:
-            return f'{jid}/{self.resource}'
-        return jid
+        jid = f'{self.localpart}@{self.domain}' if self.localpart else self.domain
+        return f'{jid}/{self.resource}' if self.resource is not None else jid
 
     def __hash__(self):
         return hash(str(self))
@@ -683,7 +677,7 @@ class JID:
                 return False
 
         if not isinstance(other, JID):
-            raise TypeError('eq with type (%s) not supported' % type(other))
+            raise TypeError(f'eq with type ({type(other)}) not supported')
 
         return (self.localpart == other.localpart and
                 self.domain == other.domain and
@@ -766,11 +760,17 @@ class StreamErrorNode(Node):
             self._text[lang] = text
 
     def get_condition(self):
-        for tag in self.getChildren():
-            if (tag.getName() != 'text' and
-                    tag.getNamespace() == Namespace.XMPP_STREAMS):
-                return tag.getName()
-        return None
+        return next(
+            (
+                tag.getName()
+                for tag in self.getChildren()
+                if (
+                    tag.getName() != 'text'
+                    and tag.getNamespace() == Namespace.XMPP_STREAMS
+                )
+            ),
+            None,
+        )
 
     def get_text(self, pref_lang=None):
         if pref_lang is not None:
@@ -784,9 +784,7 @@ class StreamErrorNode(Node):
                 return text
 
             text = self._text.get(None)
-            if text is not None:
-                return text
-            return self._text.popitem()[1]
+            return text if text is not None else self._text.popitem()[1]
         return ''
 
 
@@ -900,10 +898,7 @@ class Protocol(Node):
         """
         Return the value of the 'jid' attribute
         """
-        attr = self.getAttr('jid')
-        if attr:
-            return JID.from_string(attr)
-        return attr
+        return JID.from_string(attr) if (attr := self.getAttr('jid')) else attr
 
     def getID(self):
         """
@@ -953,39 +948,56 @@ class Protocol(Node):
         errtag = self.getTag('error')
         if errtag is None:
             return None
-        for tag in errtag.getChildren():
-            if (tag.getName() != 'text' and
-                    tag.getNamespace() == Namespace.STANZAS):
-                return tag.getName()
-        return None
+        return next(
+            (
+                tag.getName()
+                for tag in errtag.getChildren()
+                if (
+                    tag.getName() != 'text'
+                    and tag.getNamespace() == Namespace.STANZAS
+                )
+            ),
+            None,
+        )
 
     def getAppError(self):
         errtag = self.getTag('error')
         if errtag is None:
             return None
-        for tag in errtag.getChildren():
-            if (tag.getName() != 'text' and
-                    tag.getNamespace() != Namespace.STANZAS):
-                return tag.getName()
-        return None
+        return next(
+            (
+                tag.getName()
+                for tag in errtag.getChildren()
+                if (
+                    tag.getName() != 'text'
+                    and tag.getNamespace() != Namespace.STANZAS
+                )
+            ),
+            None,
+        )
 
     def getAppErrorNamespace(self):
         errtag = self.getTag('error')
         if errtag is None:
             return None
-        for tag in errtag.getChildren():
-            if (tag.getName() != 'text' and
-                    tag.getNamespace() != Namespace.STANZAS):
-                return tag.getNamespace()
-        return None
+        return next(
+            (
+                tag.getNamespace()
+                for tag in errtag.getChildren()
+                if (
+                    tag.getName() != 'text'
+                    and tag.getNamespace() != Namespace.STANZAS
+                )
+            ),
+            None,
+        )
 
     def getErrorMsg(self):
         """
         Return the textual description of the error (if present)
         or the error condition
         """
-        errtag = self.getTag('error')
-        if errtag:
+        if errtag := self.getTag('error'):
             for tag in errtag.getChildren():
                 if tag.getName() == 'text':
                     return tag.getData()
@@ -1063,9 +1075,7 @@ class Protocol(Node):
         """
         tag = Node.getTag(self, name, attrs, namespace)
         if protocol and tag:
-            if name == 'message':
-                return Message(node=tag)
-            return Protocol(node=tag)
+            return Message(node=tag) if name == 'message' else Protocol(node=tag)
         return tag
 
     def __setitem__(self, item, val):
@@ -1207,8 +1217,7 @@ class Message(Protocol):
                     frm=self.getTo(),
                     body=text,
                     typ=self.getType())
-        th = self.getThread()
-        if th:
+        if th := self.getThread():
             m.setThread(th)
         return m
 
@@ -1218,8 +1227,7 @@ class Message(Protocol):
         """
         attrs = []
         for xtag in self.getTags('x'):
-            for child in xtag.getTags('status'):
-                attrs.append(child.getAttr('code'))
+            attrs.extend(child.getAttr('code') for child in xtag.getTags('status'))
         return attrs
 
     def setMarker(self, type_, id_):
@@ -1317,7 +1325,7 @@ class Presence(Protocol):
         Set the show value of the message
         """
         if val not in ['away', 'chat', 'dnd', 'xa']:
-            raise ValueError('Invalid show value: %s' % val)
+            raise ValueError(f'Invalid show value: {val}')
         self.setTagData('show', val)
 
     def setStatus(self, val):
@@ -1386,8 +1394,7 @@ class Presence(Protocol):
         """
         attrs = []
         for xtag in self.getTags('x'):
-            for child in xtag.getTags('status'):
-                attrs.append(child.getAttr('code'))
+            attrs.extend(child.getAttr('code') for child in xtag.getTags('status'))
         return attrs
 
 class Iq(Protocol):
@@ -1439,54 +1446,45 @@ class Iq(Protocol):
         """
         Return the namespace of the 'query' child element
         """
-        tag = self.getQuery()
-        if tag:
-            return tag.getNamespace()
-        return None
+        return tag.getNamespace() if (tag := self.getQuery()) else None
 
     def getQuerynode(self):
         """
         Return the 'node' attribute value of the 'query' child element
         """
-        tag = self.getQuery()
-        if tag:
-            return tag.getAttr('node')
-        return None
+        return tag.getAttr('node') if (tag := self.getQuery()) else None
 
     def getQueryPayload(self):
         """
         Return the 'query' child element payload
         """
-        tag = self.getQuery()
-        if tag:
-            return tag.getPayload()
-        return None
+        return tag.getPayload() if (tag := self.getQuery()) else None
 
     def getQueryChildren(self):
         """
         Return the 'query' child element child nodes
         """
-        tag = self.getQuery()
-        if tag:
-            return tag.getChildren()
-        return None
+        return tag.getChildren() if (tag := self.getQuery()) else None
 
     def getQueryChild(self, name=None):
         """
         Return the 'query' child element with name, or the first element
         which is not an error element
         """
-        query = self.getQuery()
-        if not query:
+        if query := self.getQuery():
+            return next(
+                (
+                    node
+                    for node in query.getChildren()
+                    if name is not None
+                    and node.getName() == name
+                    or name is None
+                    and node.getName() != 'error'
+                ),
+                None,
+            )
+        else:
             return None
-        for node in query.getChildren():
-            if name is not None:
-                if node.getName() == name:
-                    return node
-            else:
-                if node.getName() != 'error':
-                    return node
-        return None
 
     def setQuery(self, name=None):
         """
@@ -1565,32 +1563,21 @@ class Hashes(Node):
         """
         hl = None
         hash_ = None
-        # file_string can be a string or a file
-        if isinstance(file_string, str):
-            if algo == 'sha-1':
-                hl = hashlib.sha1()
-            elif algo == 'md5':
-                hl = hashlib.md5()
-            elif algo == 'sha-256':
-                hl = hashlib.sha256()
-            elif algo == 'sha-512':
-                hl = hashlib.sha512()
-            if hl:
+        if algo == 'sha-1':
+            hl = hashlib.sha1()
+        elif algo == 'md5':
+            hl = hashlib.md5()
+        elif algo == 'sha-256':
+            hl = hashlib.sha256()
+        elif algo == 'sha-512':
+            hl = hashlib.sha512()
+        if hl:
+            if isinstance(file_string, str):
                 hl.update(file_string)
-                hash_ = hl.hexdigest()
-        else: # if it is a file
-            if algo == 'sha-1':
-                hl = hashlib.sha1()
-            elif algo == 'md5':
-                hl = hashlib.md5()
-            elif algo == 'sha-256':
-                hl = hashlib.sha256()
-            elif algo == 'sha-512':
-                hl = hashlib.sha512()
-            if hl:
+            else:
                 for line in file_string:
                     hl.update(line)
-                hash_ = hl.hexdigest()
+            hash_ = hl.hexdigest()
         return hash_
 
     def addHash(self, hash_, algo):
@@ -1726,14 +1713,12 @@ class Features(Node):
         if mechanisms is None:
             return set()
         mechanisms = mechanisms.getTags('mechanism')
-        return set(mech.getData() for mech in mechanisms)
+        return {mech.getData() for mech in mechanisms}
 
     def get_domain_based_name(self):
         hostname = self.getTag('hostname',
                                namespace=Namespace.DOMAIN_BASED_NAME)
-        if hostname is not None:
-            return hostname.getData()
-        return None
+        return hostname.getData() if hostname is not None else None
 
     def has_bind(self):
         return self.getTag('bind', namespace=Namespace.BIND) is not None
@@ -1790,7 +1775,7 @@ class ErrorNode(Node):
         if not cod:
             self.setName('stream:error')
         if txt:
-            self.addChild(node=Node(ns + ' text', {}, [txt]))
+            self.addChild(node=Node(f'{ns} text', {}, [txt]))
         if cod:
             self.setAttr('code', cod)
 
@@ -1852,7 +1837,7 @@ class DataField(Node):
             self.setValue(value)
         if typ:
             self.setType(typ)
-        elif not typ and not node:
+        elif not node:
             self.setType('text-single')
         if required:
             self.setRequired(required)
@@ -1920,19 +1905,16 @@ class DataField(Node):
         """
         Return the list of values associated with this field
         """
-        ret = []
-        for tag in self.getTags('value'):
-            ret.append(tag.getData())
-        return ret
+        return [tag.getData() for tag in self.getTags('value')]
 
     def getOptions(self):
         """
         Return label-option pairs list associated with this field
         """
-        ret = []
-        for tag in self.getTags('option'):
-            ret.append([tag.getAttr('label'), tag.getTagData('value')])
-        return ret
+        return [
+            [tag.getAttr('label'), tag.getTagData('value')]
+            for tag in self.getTags('option')
+        ]
 
     def setOptions(self, lst):
         """
@@ -2016,9 +1998,7 @@ class DataForm(Node):
             self.setTitle(title)
         if data is not None:
             if isinstance(data, dict):
-                newdata = []
-                for name in data.keys():
-                    newdata.append(DataField(name, data[name]))
+                newdata = [DataField(name, data[name]) for name in data.keys()]
                 data = newdata
             for child in data:
                 if child.__class__.__name__ == 'DataField':
@@ -2081,10 +2061,7 @@ class DataForm(Node):
         Create if nessessary or get the existing datafield object with name
         'name' and return it
         """
-        f = self.getField(name)
-        if f:
-            return f
-        return self.addChild(node=DataField(name))
+        return f if (f := self.getField(name)) else self.addChild(node=DataField(name))
 
     def asDict(self):
         """
@@ -2096,9 +2073,7 @@ class DataForm(Node):
             name = field.getAttr('var')
             typ = field.getType()
             if typ and typ.endswith('-multi'):
-                val = []
-                for i in field.getTags('value'):
-                    val.append(i.getData())
+                val = [i.getData() for i in field.getTags('value')]
             else:
                 val = field.getTagData('value')
             ret[name] = val
@@ -2110,8 +2085,7 @@ class DataForm(Node):
         """
         Simple dictionary interface for getting datafields values by their names
         """
-        item = self.getField(name)
-        if item:
+        if item := self.getField(name):
             return item.getValue()
         raise IndexError('No such field')
 

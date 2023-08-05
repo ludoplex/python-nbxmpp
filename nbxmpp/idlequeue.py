@@ -66,11 +66,7 @@ def get_idlequeue():
         # gobject.io_add_watch does not work on windows
         return SelectIdleQueue()
 
-    if HAVE_GLIB:
-        # Gajim's default Idlequeue
-        return GlibIdleQueue()
-    # GUI less implementation
-    return SelectIdleQueue()
+    return GlibIdleQueue() if HAVE_GLIB else SelectIdleQueue()
 
 
 class IdleObject:
@@ -205,7 +201,7 @@ class IdleCommand(IdleObject):
             res = self.pipe.read()  # pylint: disable=no-member
         except Exception:
             res = ''
-        if res == '':
+        if not res:
             return self.pollend()
 
         self.result += res
@@ -308,7 +304,7 @@ class IdleQueue:
         """
         log_txt = 'read timeout set for fd %s on %i seconds' % (fd, seconds)
         if func:
-            log_txt += ' with function ' + str(func)
+            log_txt += f' with function {str(func)}'
         log.info(log_txt)
         timeout = self.current_time() + seconds
         if fd in self.read_timeouts:
@@ -345,8 +341,8 @@ class IdleQueue:
             if alarm_time in self.alarms:
                 for callback in self.alarms[alarm_time]:
                     callback()
-                if alarm_time in self.alarms:
-                    del self.alarms[alarm_time]
+            if alarm_time in self.alarms:
+                del self.alarms[alarm_time]
 
     def plug_idle(self, obj, writable=True, readable=True):
         """
@@ -362,16 +358,9 @@ class IdleQueue:
             self.unplug_idle(obj.fd)
         self.queue[obj.fd] = obj
         if writable:
-            if not readable:
-                flags = FLAG_WRITE
-            else:
-                flags = FLAG_READ_WRITE
+            flags = FLAG_WRITE if not readable else FLAG_READ_WRITE
         else:
-            if readable:
-                flags = FLAG_READ
-            else:
-                # when we paused a FT, we expect only a close event
-                flags = FLAG_CLOSE
+            flags = FLAG_READ if readable else FLAG_CLOSE
         self._add_idle(obj.fd, flags)
 
     def _add_idle(self, fd, flags):
@@ -421,9 +410,7 @@ class IdleQueue:
             obj.pollend()
             return False
 
-        if read_write:
-            return True
-        return False
+        return read_write
 
     def process(self):
         """
@@ -453,7 +440,7 @@ class SelectIdleQueue(IdleQueue):
         """
         bad_fds = []
         union = {}
-        union.update(self.write_fds)
+        union |= self.write_fds
         union.update(self.read_fds)
         union.update(self.error_fds)
         for fd in union:
@@ -516,16 +503,13 @@ class SelectIdleQueue(IdleQueue):
                 self.checkQueue()
                 raise
         for fd in waiting_descriptors[0]:
-            idle_object = self.queue.get(fd)
-            if idle_object:
+            if idle_object := self.queue.get(fd):
                 idle_object.pollin()
         for fd in waiting_descriptors[1]:
-            idle_object = self.queue.get(fd)
-            if idle_object:
+            if idle_object := self.queue.get(fd):
                 idle_object.pollout()
         for fd in waiting_descriptors[2]:
-            idle_object = self.queue.get(fd)
-            if idle_object:
+            if idle_object := self.queue.get(fd):
                 idle_object.pollend()
         self._check_time_events()
         return True
@@ -574,7 +558,7 @@ class GlibIdleQueue(IdleQueue):
         This method is called when we unplug a new idle object. Stop listening
         for events from fd
         """
-        if not fd in self.events:
+        if fd not in self.events:
             return
 
         GLib.source_remove(self.events[fd])

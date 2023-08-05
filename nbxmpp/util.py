@@ -54,9 +54,7 @@ def b64decode(data, return_type=str):
     if isinstance(data, str):
         data = data.encode()
     result = base64.b64decode(data)
-    if return_type == bytes:
-        return result
-    return result.decode()
+    return result if return_type == bytes else result.decode()
 
 
 def b64encode(data, return_type=str):
@@ -65,9 +63,7 @@ def b64encode(data, return_type=str):
     if isinstance(data, str):
         data = data.encode()
     result = base64.b64encode(data)
-    if return_type == bytes:
-        return result
-    return result.decode()
+    return result if return_type == bytes else result.decode()
 
 
 def get_properties_struct(name, own_jid):
@@ -75,9 +71,7 @@ def get_properties_struct(name, own_jid):
         return MessageProperties(own_jid)
     if name == 'iq':
         return IqProperties(own_jid)
-    if name == 'presence':
-        return PresenceProperties(own_jid)
-    return Properties()
+    return PresenceProperties(own_jid) if name == 'presence' else Properties()
 
 
 def from_xs_boolean(value):
@@ -87,7 +81,7 @@ def from_xs_boolean(value):
     if value in ('0', 'false', 'False', ''):
         return False
 
-    raise ValueError('Cant convert %s to python boolean' % value)
+    raise ValueError(f'Cant convert {value} to python boolean')
 
 
 def to_xs_boolean(value):
@@ -102,8 +96,7 @@ def to_xs_boolean(value):
     if value is None:
         return 'false'
 
-    raise ValueError(
-        'Cant convert %s to xs:boolean' % value)
+    raise ValueError(f'Cant convert {value} to xs:boolean')
 
 
 error_classes = {
@@ -173,7 +166,7 @@ def compute_caps_hash(info, compare=True):
 
     identities = sorted(info.identities, key=sort_identities_key)
     for identity in identities:
-        string_ += '%s<' % str(identity)
+        string_ += f'{str(identity)}<'
 
     # If the response includes more than one service discovery identity with
     # the same category/type/lang/name, consider the entire response
@@ -185,7 +178,7 @@ def compute_caps_hash(info, compare=True):
     # For each feature, append the feature to S, followed by the '<' character.
     features = sorted(info.features)
     for feature in features:
-        string_ += '%s<' % feature
+        string_ += f'{feature}<'
 
     # If the response includes more than one service discovery feature with the
     # same XML character data, consider the entire response to be ill-formed.
@@ -244,7 +237,7 @@ def compute_caps_hash(info, compare=True):
 
     dataforms = sorted(dataforms, key=sort_dataforms_key)
     for dataform in dataforms:
-        string_ += '%s<' % dataform['FORM_TYPE'].getTagData('value')
+        string_ += f"{dataform['FORM_TYPE'].getTagData('value')}<"
 
         fields = {}
         for field in dataform.iter_fields():
@@ -254,15 +247,16 @@ def compute_caps_hash(info, compare=True):
             fields[field.var] = sorted([value.getData() for value in values])
 
         for var in sorted(fields.keys()):
-            string_ += '%s<' % var
+            string_ += f'{var}<'
             for value in fields[var]:
-                string_ += '%s<' % value
+                string_ += f'{value}<'
 
     hash_ = hashlib.sha1(string_.encode())
     b64hash = b64encode(hash_.digest())
     if compare and b64hash != info.get_caps_hash():
-        raise DiscoInfoMalformed('Caps hashes differ: %s != %s' % (
-            b64hash, info.get_caps_hash()))
+        raise DiscoInfoMalformed(
+            f'Caps hashes differ: {b64hash} != {info.get_caps_hash()}'
+        )
     return b64hash
 
 
@@ -312,7 +306,7 @@ def get_stream_header(domain, lang, is_websocket):
     if is_websocket:
         return WebsocketOpenHeader(domain, lang)
     header = StreamHeader(domain, lang)
-    return "<?xml version='1.0'?>%s>" % str(header)[:-3]
+    return f"<?xml version='1.0'?>{str(header)[:-3]}>"
 
 
 def get_stanza_id():
@@ -348,16 +342,16 @@ def get_invalid_xml_regex():
     r = c
     while c < '\ufdef':
         c = chr(ord(c) + 1)
-        r += '|' + c
+        r += f'|{c}'
 
     # \ufffe-\uffff, \u1fffe-\u1ffff, ..., \u10fffe-\u10ffff
     c = '\ufffe'
-    r += '|' + c
-    r += '|' + chr(ord(c) + 1)
+    r += f'|{c}'
+    r += f'|{chr(ord(c) + 1)}'
     while c < '\U0010fffe':
         c = chr(ord(c) + 0x10000)
-        r += '|' + c
-        r += '|' + chr(ord(c) + 1)
+        r += f'|{c}'
+        r += f'|{chr(ord(c) + 1)}'
 
     return re.compile(r)
 
@@ -385,9 +379,7 @@ def get_websocket_close_string(websocket):
     data = websocket.get_close_data()
     code = websocket.get_close_code()
 
-    if code is None and data is None:
-        return ''
-    return ' Data: %s Code: %s' % (data, code)
+    return '' if code is None and data is None else f' Data: {data} Code: {code}'
 
 
 def is_websocket_close(stanza):
@@ -429,4 +421,4 @@ class LogAdapter(LoggerAdapter):
         self.extra['context'] = context
 
     def process(self, msg, kwargs):
-        return '(%s) %s' % (self.extra['context'], msg), kwargs
+        return f"({self.extra['context']}) {msg}", kwargs

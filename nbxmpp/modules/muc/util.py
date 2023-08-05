@@ -84,20 +84,15 @@ def make_set_config_request(room_jid, form):
 
 
 def make_config_request(room_jid):
-    iq = Iq(typ='get',
-            queryNS=Namespace.MUC_OWNER,
-            to=room_jid)
-    return iq
+    return Iq(typ='get', queryNS=Namespace.MUC_OWNER, to=room_jid)
 
 
 def make_cancel_config_request(room_jid):
     cancel = Node(tag='x', attrs={'xmlns': Namespace.DATA,
                                   'type': 'cancel'})
-    iq = Iq(typ='set',
-            queryNS=Namespace.MUC_OWNER,
-            payload=cancel,
-            to=room_jid)
-    return iq
+    return Iq(
+        typ='set', queryNS=Namespace.MUC_OWNER, payload=cancel, to=room_jid
+    )
 
 
 def make_set_role_request(room_jid, nick, role, reason):
@@ -157,7 +152,7 @@ def parse_muc_user(muc_user, is_presence=True):
         try:
             role = Role(role)
         except ValueError:
-            raise StanzaMalformed('invalid role %s' % role)
+            raise StanzaMalformed(f'invalid role {role}')
 
     elif is_presence:
         # role attr MUST be included in all presence broadcasts
@@ -168,7 +163,7 @@ def parse_muc_user(muc_user, is_presence=True):
         try:
             affiliation = Affiliation(affiliation)
         except ValueError:
-            raise StanzaMalformed('invalid affiliation %s' % affiliation)
+            raise StanzaMalformed(f'invalid affiliation {affiliation}')
 
     elif is_presence:
         # affiliation attr MUST be included in all presence broadcasts
@@ -179,7 +174,7 @@ def parse_muc_user(muc_user, is_presence=True):
         try:
             jid = JID.from_string(jid)
         except InvalidJid as error:
-            raise StanzaMalformed('invalid jid %s, %s' % (jid, error))
+            raise StanzaMalformed(f'invalid jid {jid}, {error}')
 
     return MucUserData(affiliation=affiliation,
                        jid=jid,

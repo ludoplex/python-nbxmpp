@@ -58,8 +58,7 @@ class HTTPUpload(BaseModule):
         for header in slot.getTag('put').getTags('header'):
             name = header.getAttr('name')
             if name not in ALLOWED_HEADERS:
-                raise MalformedStanzaError(
-                    'not allowed header found: %s' % name, response)
+                raise MalformedStanzaError(f'not allowed header found: {name}', response)
 
             data = header.getData()
             if '\n' in data:

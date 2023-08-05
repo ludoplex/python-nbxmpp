@@ -100,9 +100,7 @@ def http_request_task(func):
 
 
 def is_fatal_error(error):
-    if is_error(error):
-        return error.is_fatal
-    return isinstance(error, Exception)
+    return error.is_fatal if is_error(error) else isinstance(error, Exception)
 
 
 class Task:
@@ -246,9 +244,7 @@ class Task:
     def get_result(self):
         # if self._error is None, there was no error
         # but None is a valid value for self._result
-        if self._error is not None:
-            return self._error
-        return self._result
+        return self._error if self._error is not None else self._result
 
     def finish(self):
         if self._error is not None:

@@ -81,8 +81,6 @@ class Discovery(BaseModule):
 def parse_disco_info(stanza, timestamp=None):
     idenities = []
     features = []
-    dataforms = []
-
     if timestamp is None:
         timestamp = time.time()
 
@@ -104,9 +102,10 @@ def parse_disco_info(stanza, timestamp=None):
         except Exception:
             raise MalformedStanzaError('invalid attributes', stanza)
 
-    for node in query.getTags('x', namespace=Namespace.DATA):
-        dataforms.append(extend_form(node))
-
+    dataforms = [
+        extend_form(node)
+        for node in query.getTags('x', namespace=Namespace.DATA)
+    ]
     return DiscoInfo(stanza=stanza,
                      identities=idenities,
                      features=features,

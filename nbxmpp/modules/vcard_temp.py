@@ -88,9 +88,7 @@ class VCard:
             name = info.getName()
             if name in ('ADR', 'TEL', 'EMAIL'):
                 dict_.setdefault(name, [])
-                entry = {}
-                for child in info.getChildren():
-                    entry[child.getName()] = child.getData()
+                entry = {child.getName(): child.getData() for child in info.getChildren()}
                 dict_[name].append(entry)
             elif info.getChildren() == []:
                 dict_[name] = info.getData()

@@ -22,10 +22,10 @@ XML canonicalisation methods (for XEP-0116)
 """
 
 def c14n(node, is_buggy):
-    s = "<" + node.name
+    s = f"<{node.name}"
     if node.namespace:
         if not node.parent or node.parent.namespace != node.namespace:
-            s += ' xmlns="%s"' % node.namespace
+            s += f' xmlns="{node.namespace}"'
 
     sorted_attrs = sorted(node.attrs.keys())
     for key in sorted_attrs:
@@ -33,7 +33,7 @@ def c14n(node, is_buggy):
             continue
         val = str(node.attrs[key])
         # like XMLescape() but with whitespace and without &gt;
-        s += ' %s="%s"' % (key, normalise_attr(val))
+        s += f' {key}="{normalise_attr(val)}"'
     s += ">"
     cnt = 0
     if node.kids:
@@ -45,9 +45,9 @@ def c14n(node, is_buggy):
     if (len(node.data)-1) >= cnt:
         s = s + normalise_text(node.data[cnt])
     if not node.kids and s.endswith('>'):
-        s=s[:-1]+' />'
+        s = f'{s[:-1]} />'
     else:
-        s = s + "</" + node.name + ">"
+        s = f"{s}</{node.name}>"
     return s
 
 def normalise_attr(val):

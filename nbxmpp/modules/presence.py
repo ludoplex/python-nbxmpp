@@ -126,7 +126,7 @@ class BasePresence(BaseModule):
              extend=None):
 
         if show is not None and show not in ('chat', 'away', 'xa', 'dnd'):
-            raise ValueError('Invalid show value: %s' % show)
+            raise ValueError(f'Invalid show value: {show}')
 
         presence = Presence(jid, typ, priority, show, status)
         if nick is not None:
@@ -141,15 +141,15 @@ class BasePresence(BaseModule):
             presence.setTag('c', namespace=Namespace.CAPS, attrs=caps)
 
         if signed is not None:
-            presence.setTag(Namespace.SIGNED + ' x').setData(signed)
+            presence.setTag(f'{Namespace.SIGNED} x').setData(signed)
 
         if muc or muc_history is not None or muc_password is not None:
-            muc_x = presence.setTag(Namespace.MUC + ' x')
-            if muc_history is not None:
-                muc_x.setTag('history', muc_history)
+            muc_x = presence.setTag(f'{Namespace.MUC} x')
+        if muc_history is not None:
+            muc_x.setTag('history', muc_history)
 
-            if muc_password is not None:
-                muc_x.setTagData('password', muc_password)
+        if muc_password is not None:
+            muc_x.setTagData('password', muc_password)
 
         if extend is not None:
             for node in extend:

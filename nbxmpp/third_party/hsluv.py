@@ -49,21 +49,14 @@ def _length_of_ray_until_intersect(theta, line):
 def _get_bounds(l):
     result = []
     sub1 = math.pow(l + 16, 3) / 1560896
-    if sub1 > epsilon:
-        sub2 = sub1
-    else:
-        sub2 = l / kappa
-    _g = 0
-    while _g < 3:
+    sub2 = sub1 if sub1 > epsilon else l / kappa
+    for _g in range(3):
         c = _g
-        _g = _g + 1
         m1 = m[c][0]
         m2 = m[c][1]
         m3 = m[c][2]
-        _g1 = 0
-        while _g1 < 2:
+        for _g1 in range(2):
             t = _g1
-            _g1 = _g1 + 1
             top1 = (284517 * m1 - 94839 * m3) * sub2
             top2 = ((838422 * m3 + 769860 * m2 + 731718 * m1) *
                     l * sub2 - (769860 * t) * l)
@@ -75,10 +68,8 @@ def _get_bounds(l):
 def _max_safe_chroma_for_l(l):
     bounds = _get_bounds(l)
     _hx_min = 1.7976931348623157e+308
-    _g = 0
-    while _g < 2:
+    for _g in range(2):
         i = _g
-        _g = _g + 1
         length = _distance_line_from_origin(bounds[i])
         if math.isnan(_hx_min):
             pass
@@ -96,7 +87,7 @@ def _max_chroma_for_lh(l, h):
     _g = 0
     while _g < len(bounds):
         bound = bounds[_g]
-        _g = (_g + 1)
+        _g += 1
         length = _length_of_ray_until_intersect(hrad, bound)
         if length >= 0:
             if math.isnan(_hx_min):
@@ -110,11 +101,9 @@ def _max_chroma_for_lh(l, h):
 
 def _dot_product(a, b):
     sum = 0
-    _g1 = 0
     _g = len(a)
-    while _g1 < _g:
+    for _g1 in range(_g):
         i = _g1
-        _g1 = _g1 + 1
         sum += a[i] * b[i]
     return sum
 
@@ -126,9 +115,7 @@ def _from_linear(c):
 
 
 def _to_linear(c):
-    if c > 0.04045:
-        return math.pow((c + 0.055) / 1.055, 2.4)
-    return c / 12.92
+    return math.pow((c + 0.055) / 1.055, 2.4) if c > 0.04045 else c / 12.92
 
 
 def xyz_to_rgb(_hx_tuple):
@@ -154,9 +141,7 @@ def _y_to_l(y):
 
 
 def _l_to_y(l):
-    if l <= 8:
-        return refY * l / kappa
-    return refY * math.pow((l + 16) / 116, 3)
+    return refY * l / kappa if l <= 8 else refY * math.pow((l + 16) / 116, 3)
 
 
 def xyz_to_luv(_hx_tuple):
@@ -198,11 +183,8 @@ def luv_to_lch(_hx_tuple):
     l = float(_hx_tuple[0])
     u = float(_hx_tuple[1])
     v = float(_hx_tuple[2])
-    _v = (u * u) + (v * v)
-    if _v < 0:
-        c = float("nan")
-    else:
-        c = math.sqrt(_v)
+    _v = u**2 + v**2
+    c = float("nan") if _v < 0 else math.sqrt(_v)
     if c < 0.00000001:
         h = 0
     else:
@@ -277,10 +259,8 @@ def lch_to_hpluv(_hx_tuple):
 
 def rgb_to_hex(_hx_tuple):
     h = "#"
-    _g = 0
-    while _g < 3:
+    for _g in range(3):
         i = _g
-        _g = _g + 1
         chan = float(_hx_tuple[i])
         c = math.floor(chan * 255 + 0.5)
         digit2 = int(c % 16)
@@ -293,10 +273,8 @@ def rgb_to_hex(_hx_tuple):
 def hex_to_rgb(hex):
     hex = hex.lower()
     ret = []
-    _g = 0
-    while _g < 3:
+    for _g in range(3):
         i = _g
-        _g = _g + 1
         index = i * 2 + 1
         _hx_str = hex[index]
         digit1 = hex_chars.find(_hx_str)

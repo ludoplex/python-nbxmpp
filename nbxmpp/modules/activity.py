@@ -84,10 +84,14 @@ class Activity(BaseModule):
     @staticmethod
     def _parse_sub_activity(activity):
         sub_activities = ACTIVITIES[activity.getName()]
-        for sub in activity.getChildren():
-            if sub.getName() in sub_activities:
-                return sub.getName()
-        return None
+        return next(
+            (
+                sub.getName()
+                for sub in activity.getChildren()
+                if sub.getName() in sub_activities
+            ),
+            None,
+        )
 
     @iq_request_task
     def set_activity(self, data):

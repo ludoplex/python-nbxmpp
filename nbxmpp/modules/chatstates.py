@@ -55,7 +55,11 @@ class Chatstates(BaseModule):
 
 def parse_chatstate(stanza):
     children = stanza.getChildren()
-    for child in children:
-        if child.getNamespace() == Namespace.CHATSTATES:
-            return Chatstate(child.getName())
-    return None
+    return next(
+        (
+            Chatstate(child.getName())
+            for child in children
+            if child.getNamespace() == Namespace.CHATSTATES
+        ),
+        None,
+    )

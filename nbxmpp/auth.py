@@ -106,12 +106,9 @@ class SASL:
             self._abort_auth('invalid-mechanism')
             return
 
-        chosen_mechanism = None
-        for mech in SASL_AUTH_MECHS:
-            if mech in available_mechs:
-                chosen_mechanism = mech
-                break
-
+        chosen_mechanism = next(
+            (mech for mech in SASL_AUTH_MECHS if mech in available_mechs), None
+        )
         if chosen_mechanism is None:
             self._log.error('No available auth mechanisms found')
             self._abort_auth('invalid-mechanism')
@@ -156,10 +153,7 @@ class SASL:
 
         elif chosen_mechanism == 'GSSAPI':
             self._method = GSSAPI(self._client)
-            if domain_based_name:
-                hostname = domain_based_name
-            else:
-                hostname = self._client.domain
+            hostname = domain_based_name if domain_based_name else self._client.domain
             try:
                 self._method.initiate(hostname)
             except AuthFail as error:
@@ -243,7 +237,7 @@ class EXTERNAL:
         self._client = client
 
     def initiate(self, username, server):
-        payload = b64encode('%s@%s' % (username, server))
+        payload = b64encode(f'{username}@{server}')
         node = Node('auth',
                     attrs={'xmlns': Namespace.SASL, 'mechanism': 'EXTERNAL'},
                     payload=[payload])
@@ -274,7 +268,8 @@ class GSSAPI:
 
     def initiate(self, hostname):
         service = gssapi.Name(
-            'xmpp@%s' % hostname, name_type=gssapi.NameType.hostbased_service)
+            f'xmpp@{hostname}', name_type=gssapi.NameType.hostbased_service
+        )
         try:
             self.ctx = gssapi.SecurityContext(
                 name=service, usage="initiate",
@@ -337,10 +332,10 @@ class SCRAM:
 
     def initiate(self, username, password):
         self._password = password
-        self._client_first_message_bare = 'n=%s,r=%s' % (username,
-                                                         self._client_nonce)
-        client_first_message = '%s%s' % (self._channel_binding,
-                                         self._client_first_message_bare)
+        self._client_first_message_bare = f'n={username},r={self._client_nonce}'
+        client_first_message = (
+            f'{self._channel_binding}{self._client_first_message_bare}'
+        )
 
         payload = b64encode(client_first_message)
         node = Node('auth',
@@ -361,31 +356,24 @@ class SCRAM:
         iteration_count = int(challenge['i'])
 
         if iteration_count < 4096:
-            raise AuthFail('Salt iteration count to low: %s' % iteration_count)
+            raise AuthFail(f'Salt iteration count to low: {iteration_count}')
 
         salted_password = pbkdf2_hmac(self._hash_method,
                                       self._password.encode('utf8'),
                                       salt,
                                       iteration_count)
 
-        client_final_message_wo_proof = 'c=%s,r=%s' % (
-            self._b64_channel_binding_data,
-            challenge['r']
+        client_final_message_wo_proof = (
+            f"c={self._b64_channel_binding_data},r={challenge['r']}"
         )
 
         client_key = self._hmac(salted_password, 'Client Key')
         stored_key = self._h(client_key)
-        auth_message = '%s,%s,%s' % (self._client_first_message_bare,
-                                     server_first_message,
-                                     client_final_message_wo_proof)
+        auth_message = f'{self._client_first_message_bare},{server_first_message},{client_final_message_wo_proof}'
         client_signature = self._hmac(stored_key, auth_message)
         client_proof = self._xor(client_key, client_signature)
 
-        client_finale_message = 'c=%s,r=%s,p=%s' % (
-            self._b64_channel_binding_data,
-            challenge['r'],
-            b64encode(client_proof)
-        )
+        client_finale_message = f"c={self._b64_channel_binding_data},r={challenge['r']},p={b64encode(client_proof)}"
 
         server_key = self._hmac(salted_password, 'Server Key')
         self._server_signature = self._hmac(server_key, auth_message)
@@ -410,7 +398,7 @@ class SCRAM:
 
     @staticmethod
     def _xor(x, y):
-        return bytes([px ^ py for px, py in zip(x, y)])
+        return bytes(px ^ py for px, py in zip(x, y))
 
     def _h(self, data):
         return hashlib.new(self._hash_method, data).digest()

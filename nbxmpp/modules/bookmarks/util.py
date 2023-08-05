@@ -54,7 +54,7 @@ def parse_bookmark(item):
     try:
         jid = JID.from_string(item.getAttr('id'))
     except Exception as error:
-        raise MalformedStanzaError('invalid jid: %s' % error, item)
+        raise MalformedStanzaError(f'invalid jid: {error}', item)
 
     if jid.localpart is None or jid.resource is not None:
         raise MalformedStanzaError('invalid jid', item)

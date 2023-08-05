@@ -204,8 +204,7 @@ class PubSub(BaseModule):
             raise result
 
         _apply_options(result.form, options)
-        result = yield self.set_node_configuration(node, result.form, jid)
-        yield result
+        yield (yield self.set_node_configuration(node, result.form, jid))
 
     @iq_request_task
     def set_node_configuration(self, node, form, jid=None):
@@ -251,13 +250,11 @@ def get_pubsub_items(stanza, node=None):
     if node is not None and items_node.getAttr('node') != node:
         return None
 
-    if items_node is not None:
-        return items_node.getTags('item')
-    return None
+    return items_node.getTags('item') if items_node is not None else None
 
 
 def get_publish_options(config):
-    options = Node(Namespace.DATA + ' x', attrs={'type': 'submit'})
+    options = Node(f'{Namespace.DATA} x', attrs={'type': 'submit'})
     field = options.addChild('field',
                              attrs={'var': 'FORM_TYPE', 'type': 'hidden'})
     field.setTagData('value', Namespace.PUBSUB_PUBLISH_OPTIONS)
@@ -368,9 +365,7 @@ def _make_publish_request(node, item, id_, options, jid):
     query = Iq('set', to=jid)
     pubsub = query.addChild('pubsub', namespace=Namespace.PUBSUB)
     publish = pubsub.addChild('publish', {'node': node})
-    attrs = {}
-    if id_ is not None:
-        attrs = {'id': id_}
+    attrs = {'id': id_} if id_ is not None else {}
     publish.addChild('item', attrs, [item])
     if options:
         publish = pubsub.addChild('publish-options')
@@ -379,7 +374,7 @@ def _make_publish_request(node, item, id_, options, jid):
 
 
 def _make_publish_options(options):
-    data = Node(Namespace.DATA + ' x', attrs={'type': 'submit'})
+    data = Node(f'{Namespace.DATA} x', attrs={'type': 'submit'})
     field = data.addChild('field', attrs={'var': 'FORM_TYPE', 'type': 'hidden'})
     field.setTagData('value', Namespace.PUBSUB_PUBLISH_OPTIONS)
 

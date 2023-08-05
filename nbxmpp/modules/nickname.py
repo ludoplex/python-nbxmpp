@@ -86,9 +86,7 @@ class Nickname(BaseModule):
     @staticmethod
     def _parse_nickname(stanza):
         nickname = stanza.getTag('nick', namespace=Namespace.NICK)
-        if nickname is None:
-            return None
-        return nickname.getData() or None
+        return None if nickname is None else nickname.getData() or None
 
     @iq_request_task
     def set_nickname(self, nickname, public=False):

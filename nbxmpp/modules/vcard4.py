@@ -98,8 +98,7 @@ def get_data_from_children(node, child_name):
     values = []
     child_nodes = node.getTags(child_name)
     for child_node in child_nodes:
-        child_value = child_node.getData()
-        if child_value:
+        if child_value := child_node.getData():
             values.append(child_value)
     return values
 
@@ -111,8 +110,7 @@ def add_children(node, child_name, values):
 
 def get_multiple_type_value(node, types):
     for type_ in types:
-        value = node.getTagData(type_)
-        if value:
+        if value := node.getTagData(type_):
             return type_, value
 
     raise ValueError('no value found')
@@ -162,11 +160,10 @@ class Parameter:
         if name != cls.name:
             raise ValueError(f'invalid parameter name: {name}')
 
-        value = node.getTagData(cls.type)
-        if not value:
+        if value := node.getTagData(cls.type):
+            return cls(value)
+        else:
             raise ValueError('no parameter value found')
-
-        return cls(value)
 
     def to_node(self):
         node = Node(self.name)
@@ -196,8 +193,7 @@ class MultiParameter:
 
         values = set()
         for value_node in value_nodes:
-            value = value_node.getData()
-            if value:
+            if value := value_node.getData():
                 values.add(value)
 
         if not values:
@@ -315,10 +311,7 @@ class Parameters:
 
     def get_types(self):
         parameter = self._parameters.get('type')
-        if parameter is None:
-            return set()
-
-        return parameter.values
+        return set() if parameter is None else parameter.values
 
     def remove_types(self, types):
         parameter = self._parameters.get('type')
@@ -341,9 +334,9 @@ class Parameters:
         parameter.values.update(types)
 
     def copy(self):
-        parameters = {}
-        for name, parameter in self._parameters.items():
-            parameters[name] = parameter.copy()
+        parameters = {
+            name: parameter.copy() for name, parameter in self._parameters.items()
+        }
         return self.__class__(parameters=parameters)
 
 
@@ -589,13 +582,13 @@ class NProperty:
 
     @property
     def is_empty(self):
-        if (self.surname or
-                self.given or
-                self.additional or
-                self.suffix or
-                self.prefix):
-            return False
-        return True
+        return (
+            not self.surname
+            and not self.given
+            and not self.additional
+            and not self.suffix
+            and not self.prefix
+        )
 
     def copy(self):
         return self.__class__(surname=list(self.surname),
@@ -667,9 +660,7 @@ class GenderProperty:
 
     @property
     def is_empty(self):
-        if self.sex or self.identity:
-            return False
-        return True
+        return not self.sex and not self.identity
 
     def copy(self):
         return self.__class__(sex=self.sex,
@@ -1173,6 +1164,6 @@ def _get_vcard(item):
     try:
         vcard = VCard.from_node(vcard)
     except Exception as error:
-        raise MalformedStanzaError('invalid vcard: %s' % error, item)
+        raise MalformedStanzaError(f'invalid vcard: {error}', item)
 
     return vcard

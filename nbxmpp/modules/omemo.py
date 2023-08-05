@@ -196,7 +196,7 @@ def _parse_omemo_message(stanza):
     try:
         iv = b64decode(iv_node.getData(), bytes)
     except Exception as error:
-        raise MalformedStanzaError('failed to decode iv: %s' % error, stanza)
+        raise MalformedStanzaError(f'failed to decode iv: {error}', stanza)
 
     payload = None
     payload_node = encrypted.getTag('payload')
@@ -204,8 +204,7 @@ def _parse_omemo_message(stanza):
         try:
             payload = b64decode(payload_node.getData(), bytes)
         except Exception as error:
-            raise MalformedStanzaError('failed to decode payload: %s' % error,
-                                       stanza)
+            raise MalformedStanzaError(f'failed to decode payload: {error}', stanza)
 
     key_nodes = header.getTags('key')
     if not key_nodes:
@@ -229,8 +228,7 @@ def _parse_omemo_message(stanza):
         try:
             keys[int(rid)] = (b64decode(kn.getData(), bytes), prekey)
         except Exception as error:
-            raise MalformedStanzaError('failed to decode key: %s' % error,
-                                       stanza)
+            raise MalformedStanzaError(f'failed to decode key: {error}', stanza)
 
     return OMEMOMessage(sid=sid, iv=iv, keys=keys, payload=payload)
 
@@ -276,28 +274,28 @@ def _parse_bundle(item):
         result['spk'] = {'key': b64decode(signed_prekey_node.getData(),
                                           bytes)}
     except Exception as error:
-        error = 'Failed to decode signedPreKeyPublic: %s' % error
+        error = f'Failed to decode signedPreKeyPublic: {error}'
         raise MalformedStanzaError(error, item)
 
     signed_prekey_id = signed_prekey_node.getAttr('signedPreKeyId')
     try:
         result['spk']['id'] = int(signed_prekey_id)
     except Exception as error:
-        raise MalformedStanzaError('Invalid signedPreKeyId: %s' % error, item)
+        raise MalformedStanzaError(f'Invalid signedPreKeyId: {error}', item)
 
     signed_signature_node = bundle.getTag('signedPreKeySignature')
     try:
         result['spk_signature'] = b64decode(signed_signature_node.getData(),
                                             bytes)
     except Exception as error:
-        error = 'Failed to decode signedPreKeySignature: %s' % error
+        error = f'Failed to decode signedPreKeySignature: {error}'
         raise MalformedStanzaError(error, item)
 
     identity_key_node = bundle.getTag('identityKey')
     try:
         result['ik'] = b64decode(identity_key_node.getData(), bytes)
     except Exception as error:
-        error = 'Failed to decode IdentityKey: %s' % error
+        error = f'Failed to decode IdentityKey: {error}'
         raise MalformedStanzaError(error, item)
 
     prekeys = bundle.getTag('prekeys')
@@ -309,13 +307,12 @@ def _parse_bundle(item):
         try:
             id_ = int(prekey.getAttr('preKeyId'))
         except Exception as error:
-            raise MalformedStanzaError('Invalid prekey: %s' % error, item)
+            raise MalformedStanzaError(f'Invalid prekey: {error}', item)
 
         try:
             key = b64decode(prekey.getData(), bytes)
         except Exception as error:
-            raise MalformedStanzaError(
-                'Failed to decode preKeyPublic: %s' % error, item)
+            raise MalformedStanzaError(f'Failed to decode preKeyPublic: {error}', item)
 
         result['otpks'].append({'key': key, 'id': id_})
 
@@ -404,8 +401,7 @@ def _parse_devicelist(item):
     result = []
     devices_nodes = list_node.getChildren()
     for dn in devices_nodes:
-        _id = dn.getAttr('id')
-        if _id:
+        if _id := dn.getAttr('id'):
             result.append(int(_id))
 
     return result

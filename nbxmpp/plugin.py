@@ -59,9 +59,7 @@ class PlugIn:
             owner.__dict__[self.__class__.__name__]=self
 
         # Execute hook
-        if hasattr(self, 'plugin'):
-            return self.plugin(owner, *args, **kwargs)
-        return None
+        return self.plugin(owner, *args, **kwargs) if hasattr(self, 'plugin') else None
 
     def PlugOut(self, *args, **kwargs):
         """

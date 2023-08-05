@@ -274,7 +274,7 @@ def parse_signcrypt(stanza):
         try:
             recipients.append(JID.from_string(jid))
         except Exception as error:
-            raise StanzaMalformed('Invalid jid: %s %s' % (jid, error))
+            raise StanzaMalformed(f'Invalid jid: {jid} {error}')
 
     timestamp = stanza.getTagAttr('time', 'stamp')
     if timestamp is None:
@@ -416,7 +416,7 @@ def _parse_keylist(jid, item):
 
         timestamp = parse_datetime(date, epoch=True)
         if timestamp is None:
-            raise ValueError('Invalid date timestamp: %s' % date)
+            raise ValueError(f'Invalid date timestamp: {date}')
 
         data.append(PGPKeyMetadata(jid, fingerprint, timestamp))
     return data

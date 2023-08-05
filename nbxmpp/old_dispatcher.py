@@ -153,16 +153,16 @@ class XMPPDispatcher(PlugIn):
         r = c
         while c < '\ufdef':
             c = chr(ord(c) + 1)
-            r += '|' + c
+            r += f'|{c}'
 
         # \ufffe-\uffff, \u1fffe-\u1ffff, ..., \u10fffe-\u10ffff
         c = '\ufffe'
-        r += '|' + c
-        r += '|' + chr(ord(c) + 1)
+        r += f'|{c}'
+        r += f'|{chr(ord(c) + 1)}'
         while c < '\U0010fffe':
             c = chr(ord(c) + 0x10000)
-            r += '|' + c
-            r += '|' + chr(ord(c) + 1)
+            r += f'|{c}'
+            r += f'|{chr(ord(c) + 1)}'
 
         self.invalid_chars_re = re.compile(r)
 
@@ -287,8 +287,7 @@ class XMPPDispatcher(PlugIn):
         self._metastream.setAttr('xmlns:stream', Namespace.STREAMS)
         self._metastream.setAttr('to', self._owner.Server)
         self._metastream.setAttr('xml:lang', self._owner.lang)
-        self._owner.send("%s%s>" % (XML_DECLARATION,
-                                    str(self._metastream)[:-2]))
+        self._owner.send(f"{XML_DECLARATION}{str(self._metastream)[:-2]}>")
 
     def _check_stream_start(self, ns, tag, attrs):
         if ns != Namespace.STREAMS or tag != 'stream':
@@ -339,9 +338,7 @@ class XMPPDispatcher(PlugIn):
             _pendingException = self._pendingExceptions.pop()
             sys.excepthook(*_pendingException)
             return None
-        if len(data) == 0:
-            return '0'
-        return len(data)
+        return '0' if len(data) == 0 else len(data)
 
     def RegisterNamespace(self, xmlns):
         """
@@ -731,7 +728,7 @@ class BOSHDispatcher(XMPPDispatcher):
             fromstream = self._metastream
             fromstream.setAttr('from', fromstream.getAttr('to'))
             fromstream.delAttr('to')
-            data = '%s%s>%s' % (XML_DECLARATION, str(fromstream)[:-2], data)
+            data = f'{XML_DECLARATION}{str(fromstream)[:-2]}>{data}'
             self.restart = False
         return XMPPDispatcher.ProcessNonBlocking(self, data)
 
@@ -745,8 +742,7 @@ class BOSHDispatcher(XMPPDispatcher):
                 self.Stream._document_attrs['id'] = stanza_attrs['authid']
             self._owner.Connection.handle_body_attrs(stanza_attrs)
 
-            children = stanza.getChildren()
-            if children:
+            if children := stanza.getChildren():
                 for child in children:
                     # if child doesn't have any ns specified, simplexml
                     # (or expat) thinks it's of parent's (BOSH body) namespace,

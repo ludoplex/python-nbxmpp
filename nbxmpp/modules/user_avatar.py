@@ -226,7 +226,7 @@ def _get_avatar_data(item, id_):
 
     avatar_sha = hashlib.sha1(avatar).hexdigest()
     if avatar_sha != id_:
-        raise MalformedStanzaError(f'avatar does not match sha', item)
+        raise MalformedStanzaError('avatar does not match sha', item)
 
     return AvatarData(data=avatar, sha=avatar_sha)
 
@@ -311,17 +311,18 @@ class AvatarMetaData:
 
     @classmethod
     def from_node(cls, node, default=None):
-        infos = []
         info_nodes = node.getTags('info')
-        for info in info_nodes:
-            infos.append(AvatarInfo(
+        infos = [
+            AvatarInfo(
                 bytes=info.getAttr('bytes'),
                 id=info.getAttr('id'),
                 type=info.getAttr('type'),
                 url=info.getAttr('url'),
                 height=info.getAttr('height'),
-                width=info.getAttr('width')
-            ))
+                width=info.getAttr('width'),
+            )
+            for info in info_nodes
+        ]
         return cls(infos=infos, default=default)
 
     def add_avatar_info(self, avatar_info, make_default=False):

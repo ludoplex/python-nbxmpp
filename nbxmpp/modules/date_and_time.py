@@ -49,11 +49,7 @@ HOUR = timedelta(hours=1)
 SECOND = timedelta(seconds=1)
 
 STDOFFSET = timedelta(seconds=-time.timezone)
-if time.daylight:
-    DSTOFFSET = timedelta(seconds=-time.altzone)
-else:
-    DSTOFFSET = STDOFFSET
-
+DSTOFFSET = timedelta(seconds=-time.altzone) if time.daylight else STDOFFSET
 DSTDIFF = DSTOFFSET - STDOFFSET
 
 
@@ -75,14 +71,10 @@ class LocalTimezone(tzinfo):
                         tzinfo=self, fold=fold)
 
     def utcoffset(self, dt):
-        if self._isdst(dt):
-            return DSTOFFSET
-        return STDOFFSET
+        return DSTOFFSET if self._isdst(dt) else STDOFFSET
 
     def dst(self, dt):
-        if self._isdst(dt):
-            return DSTDIFF
-        return ZERO
+        return DSTDIFF if self._isdst(dt) else ZERO
 
     def tzname(self, dt):
         return 'local'
@@ -156,13 +148,10 @@ def parse_datetime(timestring, check_utc=False,
 
     if match:
         timestring = ''.join(match.groups(''))
-        strformat = '%Y-%m-%d%H:%M:%S%z'
-        if match.group(3):
-            # Fractional second addendum to Time
-            strformat = '%Y-%m-%d%H:%M:%S.%f%z'
+        strformat = '%Y-%m-%d%H:%M:%S.%f%z' if match.group(3) else '%Y-%m-%d%H:%M:%S%z'
         if match.group(4):
             # UTC string denoted by addition of the character 'Z'
-            timestring = timestring[:-1] + '+0000'
+            timestring = f'{timestring[:-1]}+0000'
         try:
             date_time = datetime.strptime(timestring, strformat)
         except ValueError:
@@ -173,16 +162,10 @@ def parse_datetime(timestring, check_utc=False,
                     raise ValueError(
                         'check_utc can only be used with convert="utc"')
                 date_time.replace(tzinfo=timezone.utc)
-                if epoch:
-                    return date_time.timestamp()
-                return date_time
-
+                return date_time.timestamp() if epoch else date_time
             if convert == 'utc':
                 date_time = date_time.astimezone(timezone.utc)
-                if epoch:
-                    return date_time.timestamp()
-                return date_time
-
+                return date_time.timestamp() if epoch else date_time
             if epoch:
                 # epoch is always UTC, use convert='utc' or check_utc=True
                 raise ValueError(

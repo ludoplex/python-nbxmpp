@@ -65,9 +65,7 @@ def _make_unregister_request(jid):
 
 def _parse_oob_url(query):
     oob = query.getTag('x', namespace=Namespace.X_OOB)
-    if oob is not None:
-        return oob.getTagData('url') or None
-    return None
+    return oob.getTagData('url') or None if oob is not None else None
 
 
 def _parse_form(stanza):

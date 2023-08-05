@@ -25,13 +25,13 @@ class BaseModule:
     _depends = {}
 
     def __init__(self, client):
-        logger_name = 'nbxmpp.m.%s' % self.__class__.__name__.lower()
+        logger_name = f'nbxmpp.m.{self.__class__.__name__.lower()}'
         self._log = LogAdapter(logging.getLogger(logger_name),
                                {'context': client.log_context})
 
     def __getattr__(self, name):
         if name not in self._depends:
-            raise AttributeError('Unknown method: %s' % name)
+            raise AttributeError(f'Unknown method: {name}')
 
         module = self._client.get_module(self._depends[name])
         return getattr(module, name)
